@@ -1,8 +1,13 @@
 const { body, validationResult } = require('express-validator');
+const fs= require('fs');
+// const path= require('path');
 
 exports.validate= [
+
+
   // Validate email
   body('email')
+    .trim()
     .notEmpty()
     .withMessage('Email is required')
     .isEmail()
@@ -10,6 +15,7 @@ exports.validate= [
 
   // Validate password
   body('password')
+   .trim()
     .notEmpty()
     .withMessage('Password is required')
     .isLength({ min: 6 })
@@ -19,9 +25,13 @@ exports.validate= [
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        const error = errors.array()[0].msg; // Get the first error message
-        return res.status(400).json({ error });
-    //   return res.status(400).json({ errors: errors.array() });
+      if (req.file) {
+        const filePath = req.file.path;
+        fs.unlinkSync(filePath);
+      }
+        // const error = errors.array()[0].msg; // Get the first error message
+        // return res.status(400).json({ error });
+      return res.status(400).json({ errors: errors.array() });
     }
     next();
   }

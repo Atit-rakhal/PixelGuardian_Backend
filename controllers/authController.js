@@ -1,12 +1,11 @@
 const User = require('../models/User');
 const { hashPassword,comparePassword } = require('../utils/bcryptUtil');
-const path = require('path');
-const multer = require('multer');
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const {  generateToken,verifyToken,}= require('../utils/jwtUtil');
+const {  generateToken}= require('../utils/jwtUtil');
 app.use(bodyParser.urlencoded({ extended: true }));
+const fs= require("fs");
 
 
 
@@ -23,13 +22,17 @@ exports.signup = async (req, res) => {
     }
 
     // Check if all required fields are present
-    if (!fullName || !email || !password || !citizenshipNo) {
+    if (!fullName ||  !citizenshipNo) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
     // Check if the user with the same email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      if (req.file) {
+        const filePath = req.file.path;
+        fs.unlinkSync(filePath);
+      }
       return res.status(400).json({ error: 'User already exists' });
     
     }
@@ -103,7 +106,7 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
 
     }
-console.log("before password coparing ");
+console.log("before password comparing ");
     // Compare the provided password with the hashed password in the database
     const passwordMatch = await comparePassword(password, user.password);
     if (!passwordMatch) {
@@ -118,10 +121,79 @@ console.log("before password coparing ");
     const token= generateToken(tokenPayload);
 
     // Return the user object and the token as the response
-    return res.status(200).json({ sucess:1, msg:"login sucessfully ", token:token});
+    return res.status(200).json({ id:user._id,sucess:1, msg:"login sucessfully ", token:token});
   } catch (error) {
     console.error(error); // Log the error for troubleshooting purposes
     return res.status(500).json({ error: 'Login failed' });
   }
 };
 
+
+
+
+
+
+// exports.changePassword = async (req, res) => {
+//   try {
+//     const { currentPassword, newPassword } = req.body;
+//     const userId = req.user.id; // Assuming the user ID is available in req.user
+
+//     // Find the user by ID
+//     const user = await User.find({_id:userId});
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+//     console.log(user);
+
+//     // Compare the current password with the stored password
+//     const isMatch = await comparePassword(currentPassword, user.password);
+//     if (!isMatch) {
+//       return res.status(400).json({ error: 'Current password is incorrect' });
+//     }
+
+//     // Hash the new password
+//     const hashedPassword = await hashPassword(newPassword); 
+
+//     // Update the user's password
+//     user.password = hashedPassword;
+//     await user.save();
+
+//     return res.status(200).json({ message: 'Password changed successfully' });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ error: 'Failed to change password' });
+//   }
+// };
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.body.id;
+     console.log(userId);
+  
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Compare the current password with the stored password
+    const isMatch = await comparePassword(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to change password' });
+  }
+};
