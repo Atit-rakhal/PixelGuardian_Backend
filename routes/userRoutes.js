@@ -1,22 +1,31 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { signup ,login, changePassword} = require('../controllers/authController');
-const { getUserDetails } = require('../controllers/userController');
-const { authenticate } = require('../middlewares/authMiddleware');
-const {validate}= require('../middlewares/userValidation');
-const multerUtil = require('../utils/multerUtil');
+// const {
+//   signup,
+//   login,
+//   changePassword,
+//   forgotPassword,
+//   resetPassword,
+// } = require("../controllers/authController");
+const authController = require("../controllers/authController");
+const { getUserDetails } = require("../controllers/userController");
+const { authenticate } = require("../middlewares/authMiddleware");
+const { validate } = require("../middlewares/userValidation");
+const multerUtil = require("../utils/multerUtil");
 
 // Specify the destination folder for storing the uploaded photos
-const upload = multerUtil('./uploads/images');
+const upload = multerUtil("./uploads/images");
+router.use("/changepassword", authenticate);
 
-
-
-router.post('/signup',upload.single('photo') , validate,signup);
+router.post("/signup", validate, authController.signup);
 // router.post('/signup',upload.single('photo') , signup);
 // User details route (protected)
-router.get('/details', authenticate, getUserDetails);
-router.post("/changePassword",authenticate,changePassword)
+router.get("/details", authenticate, getUserDetails);
+router.post("/changePassword", authenticate, authController.changePassword);
+router.post("/forgotpassword", authController.forgotPassword);
+router.post("/verifyotp", authController.verifyOTP);
 
-router.post("/login", validate,login);
+router.post("/login", validate, authController.login);
+router.post("/resetpassword", authController.resetPassword);
 
 module.exports = router;

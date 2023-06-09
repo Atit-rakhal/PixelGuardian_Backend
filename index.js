@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
 const { dbConnectionString } = require('./config');
+const cors = require('cors');
+
 
 const app = express();
-
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 const port = 3000;
