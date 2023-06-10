@@ -5,12 +5,11 @@ const sendOTP = async (email, otp) => {
   try {
     // Create a Nodemailer transporter
     const transporter = nodemailer.createTransport({
-      // Configure your email provider here (e.g., Gmail, Outlook, etc.)
-      // See Nodemailer documentation for more information
-      service: "Gmail",
+      host: "smtp.ethereal.email",
+      port: 587,
       auth: {
-        user: "surajrasaili190@gmail.com",
-        pass: "qhphewrlghngwscj",
+        user: "digitallibrary.69@gmail.com",
+        pass: "dqmlztkxdfncmjfm",
       },
     });
 

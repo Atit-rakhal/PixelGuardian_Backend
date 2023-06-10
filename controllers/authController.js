@@ -15,6 +15,7 @@ const VerificationOTP = require("../models/VerificationOTP");
 
 const { sendOTP } = require("../utils/otpUtil");
 
+
 exports.signup = async (req, res) => {
   try {
     const { fullName, email, password, citizenshipNo } = req.body;
@@ -61,6 +62,10 @@ exports.signup = async (req, res) => {
     // Save the user to the databbasease
     const savedUser = await newUser.save();
 
+    // Generate the verification OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const otpExpiry = Date.now() + 3600000; // OTP expires in 1 hour
+
     const verificationOTP = new VerificationOTP({
       userId: savedUser._id,
       otp,
@@ -88,11 +93,12 @@ exports.signup = async (req, res) => {
   }
 };
 
-//verify OTP Controller
+
+
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-   
+
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
@@ -107,7 +113,7 @@ exports.verifyOTP = async (req, res) => {
 
     // Check if the OTP matches and it's not expired
     if (verificationOTP.otp !== otp || verificationOTP.otpExpiry < Date.now()) {
-      return  res.status(400).json({ error: "Invalid OTP" });
+      return res.status(400).json({ error: "Invalid OTP" });
     }
 
     // Mark the user as verified
@@ -123,7 +129,6 @@ exports.verifyOTP = async (req, res) => {
     return res.status(500).json({ error: "Failed to verify OTP" });
   }
 };
-
 
 //login controllers
 exports.login = async (req, res) => {

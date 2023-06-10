@@ -13,6 +13,7 @@ const verificationOTPSchema = new mongoose.Schema({
   otpExpiry: {
     type: Date,
     required: true,
+  
   },
 });
 
