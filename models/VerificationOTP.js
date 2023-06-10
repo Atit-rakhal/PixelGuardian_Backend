@@ -8,13 +8,23 @@ const verificationOTPSchema = new mongoose.Schema({
   },
   otp: {
     type: String,
-    required: true,
+    // required: true,
+    default: null,
   },
   otpExpiry: {
     type: Date,
-    required: true,
-  
+    // required: true,
+    default: null,
   },
+  resetToken: {
+    type: String,
+    default: null,
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null,
+  },
+  
 });
 
 const VerificationOTP = mongoose.model(

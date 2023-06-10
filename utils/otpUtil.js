@@ -1,15 +1,15 @@
 const nodemailer = require("nodemailer");
+const { user, pass } = require("../config");
 
 // Function to send the OTP to the user's email
 const sendOTP = async (email, otp) => {
   try {
     // Create a Nodemailer transporter
     const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
+      service: "Gmail",
       auth: {
-        user: "digitallibrary.69@gmail.com",
-        pass: "dqmlztkxdfncmjfm",
+        user: user,
+        pass: pass,
       },
     });
 

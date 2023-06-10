@@ -7,6 +7,7 @@ const { generateToken } = require("../utils/jwtUtil");
 app.use(bodyParser.urlencoded({ extended: true }));
 const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
+const path = require("path");
 
 const { sendPasswordResetEmail } = require("../utils/nodemailerUtils");
 const VerificationOTP = require("../models/VerificationOTP");
@@ -15,48 +16,57 @@ const VerificationOTP = require("../models/VerificationOTP");
 
 const { sendOTP } = require("../utils/otpUtil");
 
-
 exports.signup = async (req, res) => {
   try {
-    const { fullName, email, password, citizenshipNo } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      citizenshipNo,
+    } = req.body;
 
     console.log(req.body);
     // Check if photo file is present in the request
-    // if (!req.file) {
-    //   return res.status(400).json({ error: 'No photo provided' });
-    // }
+    if (!req.file) {
+      return res.status(400).json({ error: "No photo provided" });
+    }
 
     // Check if all required fields are present
-    if (!fullName || !citizenshipNo) {
+    if (!firstName || !lastName || !citizenshipNo) {
       return res.status(400).json({ error: "All fields are required" });
+    }
+    if (password != confirmPassword) {
+      return res.status(400).json({ error: "password doesnt match" });
     }
 
     // Check if the user with the same email already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      // if (req.file) {
-      //   const filePath = req.file.path;
-      //   fs.unlinkSync(filePath);
-      // }
-      return res.status(400).json({ error: "User already exists" });
+    const existingcitizenshipNo = await User.findOne({ citizenshipNo });
+
+    if (existingUser || existingcitizenshipNo) {
+      if (req.file) {
+        const filePath = req.file.path;
+        fs.unlinkSync(filePath);
+      }
+      return res.status(400).json({
+        error: "User already exists or citizenship number is already used",
+      });
     }
-    // const existingcitizenshipNo= await User.findOne({citizenshipNo});
-
-    // if(existingcitizenshipNo){
-    //   return res.status(400).json({error: 'citizenship number is already used ' });
-    // }
-
     // Hash the password
     const hashedPassword = await hashPassword(password);
 
     // Create a new user object with the provided data
     const newUser = new User({
-      fullName,
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
       citizenshipNo,
       isadmin: false,
       isVerified: false,
+      photo: req.file.filename,
     });
 
     // Save the user to the databbasease
@@ -93,8 +103,6 @@ exports.signup = async (req, res) => {
   }
 };
 
-
-
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -119,6 +127,8 @@ exports.verifyOTP = async (req, res) => {
     // Mark the user as verified
     user.isVerified = true;
     await user.save();
+    verificationOTP.isUsed = true;
+    await verificationOTP.save();
 
     // Delete the verification OTP
     await VerificationOTP.findByIdAndDelete(verificationOTP._id);
@@ -249,18 +259,26 @@ exports.forgotPassword = async (req, res) => {
     }
 
     // Find the user by email
-    const user = await User.findByEmail({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Generat reset token
+    // Generate reset token
     const resetToken = uuidv4();
+    if ((user.isVerifiederified = false)) {
+      return res.status(400).json({ error: "User not verified" });
+    }
+    // Set the reset token and expiration time in the verification OTP document
 
-    // Set the reset token and expiration time in the user document
-    user.resetToken = resetToken;
-    user.resetTokenExpiry = Date.now() + 3600000; // Token expires in 1 hour
-    await user.save();
+    const verificationOTP = new VerificationOTP({
+      userId: user._id,
+      // otp:,
+      // otpExpiry:,
+      resetToken,
+      resetTokenExpiry: Date.now() + 3600000, // Token expires in 1 hour
+    });
+    await verificationOTP.save();
 
     // Send the password reset email
     await sendPasswordResetEmail(user.email, resetToken, req.headers.host);
@@ -279,15 +297,25 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   try {
-    const { resetToken, newPassword } = req.body;
+    const { resetToken, newPassword, confirmnewPassword } = req.body;
 
-    // Find the user by the reset token and check if it's valid
-    const user = await User.findOne({
+    if (newPassword !== confirmnewPassword) {
+      return res.status(400).json({ error: "password doesnt matches" });
+    }
+
+    // Find the verification OTP document by the reset token and check if it's valid
+    const verificationOTP = await VerificationOTP.findOne({
       resetToken,
       resetTokenExpiry: { $gt: Date.now() },
     });
-    if (!user) {
+    if (!verificationOTP) {
       return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    // Find the user by the userId in the verification OTP document
+    const user = await User.findById(verificationOTP.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Update the user's password
@@ -295,6 +323,9 @@ exports.resetPassword = async (req, res) => {
     user.resetToken = null;
     user.resetTokenExpiry = null;
     await user.save();
+
+    // Delete the verification OTP document
+    await VerificationOTP.deleteOne({ _id: verificationOTP._id });
 
     return res.status(200).json({ message: "Password reset successful" });
   } catch (error) {

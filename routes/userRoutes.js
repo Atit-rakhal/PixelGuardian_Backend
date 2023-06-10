@@ -17,7 +17,7 @@ const multerUtil = require("../utils/multerUtil");
 const upload = multerUtil("./uploads/images");
 router.use("/changepassword", authenticate);
 
-router.post("/signup", validate, authController.signup);
+router.post("/signup", upload.single("photo"), validate, authController.signup);
 // router.post('/signup',upload.single('photo') , signup);
 // User details route (protected)
 router.get("/details", authenticate, getUserDetails);

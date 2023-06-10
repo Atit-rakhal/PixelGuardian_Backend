@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  fullName: {
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName: {
     type: String,
     required: true,
   },
@@ -22,11 +26,11 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 
-  //   photo:
-  //   {
-  //     type: String,
-  //     required:true
-  // },
+    photo:
+    {
+      type: String,
+      required:true
+  },
 
   isVerified: {
     type: Boolean,
@@ -36,14 +40,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  resetToken: {
-    type: String,
-    default: null,
-  },
-  resetTokenExpiry: {
-    type: Date,
-    default: null,
-  },
+ 
 });
 
 const User = mongoose.model("User", userSchema);

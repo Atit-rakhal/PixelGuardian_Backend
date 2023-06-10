@@ -1,15 +1,15 @@
 const nodemailer = require("nodemailer");
+const { user, pass } = require("../config");
 
 const sendPasswordResetEmail = async (recipientEmail, resetToken, host) => {
   try {
     // Create a Nodemailer transporter
     const transporter = nodemailer.createTransport({
-     
       // See Nodemailer documentation for more information
       service: "Gmail",
       auth: {
-        user: "surajrasaili190@gmail.com",
-        pass: "qhphewrlghngwscj",
+        user: user,
+        pass: pass,
       },
     });
 
