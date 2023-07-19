@@ -8,7 +8,10 @@ const router = express.Router();
 //   resetPassword,
 // } = require("../controllers/authController");
 const authController = require("../controllers/authController");
-const { getUserDetails } = require("../controllers/userController");
+const {
+  getUserDetails,
+  getAllUserDetails,
+} = require("../controllers/userController");
 const { authenticate } = require("../middlewares/authMiddleware");
 const { validate } = require("../middlewares/userValidation");
 const multerUtil = require("../utils/multerUtil");
@@ -28,5 +31,6 @@ router.post("/verifyotp", authController.verifyOTP);
 router.post("/login", validate, authController.login);
 router.post("/resetpassword", authController.resetPassword);
 router.post("/citizens", authController.createCitizen);
+router.post("/users", getAllUserDetails);
 
 module.exports = router;

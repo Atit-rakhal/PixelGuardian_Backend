@@ -48,10 +48,9 @@ const VerificationOTP = require("./VerificationOTP");
 // const User = mongoose.model("User", userSchema);
 
 // module.exports = User;
- // Import the VerificationOTP model
+// Import the VerificationOTP model
 
 const userSchema = new mongoose.Schema({
-  
   firstName: {
     type: String,
     required: true,
@@ -89,6 +88,10 @@ const userSchema = new mongoose.Schema({
   isAdmin: {
     type: Boolean,
     default: false,
+  },
+  userAddress: {
+    type: String,
+    required: true,
   },
 });
 

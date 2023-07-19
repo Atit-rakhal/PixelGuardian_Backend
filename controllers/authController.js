@@ -116,6 +116,7 @@ exports.signup = async (req, res) => {
       password,
       confirmPassword,
       citizenshipNo,
+      userAddress,
     } = req.body;
 
     // Check if all required fields are present
@@ -138,9 +139,7 @@ exports.signup = async (req, res) => {
     if (!citizen) {
       return res.status(400).json({ error: "Invalid citizenship details" });
     }
-    if ((citizen.lifestatus = false)) {
-      return;
-    }
+
     res.status(400).json({ error: "invalid information forvoting  " });
     // Calculate age based on dob and current date
     const currentDate = new Date();
@@ -170,6 +169,7 @@ exports.signup = async (req, res) => {
       email,
       password: hashedPassword,
       citizenshipNo,
+      userAddress,
       isAdmin: false,
       isVerified: false,
       photo: req.file.filename,
