@@ -1,7 +1,7 @@
 const User = require("../models/User");
 
 // Get user details
-const getUserDetailsbyid = async (req, res) => {
+const getUserDetailsbyuid = async (req, res) => {
   try {
     const { userId } = req.user;
 
@@ -19,8 +19,9 @@ const getUserDetailsbyid = async (req, res) => {
 };
 
 module.exports = {
-  getUserDetailsbyid,
+  getUserDetailsbyuid,
 };
+
 
 // Get all user details
 const getAllUserDetails = async (req, res) => {
@@ -32,7 +33,7 @@ const getAllUserDetails = async (req, res) => {
       return res.status(404).json({ error: "No users found" });
     }
 
-    res.status(200).json({ users: users });
+    res.status(200).json(users);
   } catch (error) {
     console.error("Get all user details error:", error);
     res.status(500).json({ error: "Failed to get user details" });

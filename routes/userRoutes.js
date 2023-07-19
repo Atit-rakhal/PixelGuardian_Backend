@@ -9,7 +9,6 @@ const router = express.Router();
 // } = require("../controllers/authController");
 const authController = require("../controllers/authController");
 const {
-  getUserDetails,
   getAllUserDetails,
 } = require("../controllers/userController");
 const { authenticate } = require("../middlewares/authMiddleware");
@@ -23,7 +22,7 @@ router.use("/changepassword", authenticate);
 router.post("/signup", upload.single("photo"), validate, authController.signup);
 // router.post('/signup',upload.single('photo') , signup);
 // User details route (protected)
-router.get("/details", authenticate, getUserDetails);
+
 router.post("/changePassword", authenticate, authController.changePassword);
 router.post("/forgotpassword", authController.forgotPassword);
 router.post("/verifyotp", authController.verifyOTP);
@@ -31,6 +30,6 @@ router.post("/verifyotp", authController.verifyOTP);
 router.post("/login", validate, authController.login);
 router.post("/resetpassword", authController.resetPassword);
 router.post("/citizens", authController.createCitizen);
-router.post("/users", getAllUserDetails);
+router.get("/users", getAllUserDetails);
 
 module.exports = router;
