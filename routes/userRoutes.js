@@ -27,5 +27,6 @@ router.post("/verifyotp", authController.verifyOTP);
 
 router.post("/login", validate, authController.login);
 router.post("/resetpassword", authController.resetPassword);
+router.post("/citizens", authController.createCitizen);
 
 module.exports = router;

@@ -1,20 +1,111 @@
 const User = require("../models/User");
+const Citizen = require("../models/citizens");
 const { hashPassword, comparePassword } = require("../utils/bcryptUtil");
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const { generateToken } = require("../utils/jwtUtil");
+
 app.use(bodyParser.urlencoded({ extended: true }));
 const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
-
 const { sendPasswordResetEmail } = require("../utils/nodemailerUtils");
 const VerificationOTP = require("../models/VerificationOTP");
 
 // Signup controller
 
 const { sendOTP } = require("../utils/otpUtil");
+
+// exports.signup = async (req, res) => {
+//   try {
+//     const {
+//       firstName,
+//       lastName,
+//       email,
+//       password,
+//       confirmPassword,
+//       citizenshipNo,
+//     } = req.body;
+
+//     console.log(req.body);
+//     // Check if photo file is present in the request
+//     if (!req.file) {
+//       return res.status(400).json({ error: "No photo provided" });
+//     }
+
+//     // Check if all required fields are present
+//     if (!firstName || !lastName || !citizenshipNo) {
+//       const filePath = req.file.path;
+//       fs.unlinkSync(filePath);
+//       return res.status(400).json({ error: "All fields are required" });
+//     }
+//     if (password != confirmPassword) {
+//       const filePath = req.file.path;
+//       fs.unlinkSync(filePath);
+//       return res.status(400).json({ error: "password doesnt match" });
+//     }
+
+//     // Check if the user with the same email already exists
+//     const existingUser = await User.findOne({ email });
+//     const existingcitizenshipNo = await User.findOne({ citizenshipNo });
+
+//     if (existingUser || existingcitizenshipNo) {
+//       const filePath = req.file.path;
+//       fs.unlinkSync(filePath);
+
+//       return res.status(400).json({
+//         error: "User already exists or citizenship number is already used",
+//       });
+//     }
+//     // Hash the password
+//     const hashedPassword = await hashPassword(password);
+
+//     // Create a new user object with the provided data
+//     const newUser = new User({
+//       firstName,
+//       lastName,
+//       email,
+//       password: hashedPassword,
+//       citizenshipNo,
+//       isadmin: false,
+//       isVerified: false,
+//       photo: req.file.filename,
+//     });
+
+//     // Save the user to the databbasease
+//     const savedUser = await newUser.save();
+
+//     // Generate the verification OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+//     const otpExpiry = Date.now() + 3600000; // OTP expires in 1 hour
+
+//     const verificationOTP = new VerificationOTP({
+//       userId: savedUser._id,
+//       otp,
+//       otpExpiry,
+//     });
+//     await verificationOTP.save();
+
+//     // Send the verification OTP to the user's email
+//     await sendOTP(email, otp);
+
+//     //payload for the  JWT token
+//     const tokenPayload = {
+//       userId: savedUser._id,
+//       email: savedUser.email,
+//     };
+
+//     const token = generateToken(tokenPayload);
+//     console.log(res.status(400));
+
+//     // Return the saved user objfullnameect as the response
+//     return res.status(201).json({ savedUser, token: token });
+//   } catch (error) {
+//     console.error(error); // Log the error for troubleshooting purposes
+//     return res.status(500).json({ error: "Signup failed" });
+//   }
+// };
 
 exports.signup = async (req, res) => {
   try {
@@ -27,33 +118,48 @@ exports.signup = async (req, res) => {
       citizenshipNo,
     } = req.body;
 
-    console.log(req.body);
-    // Check if photo file is present in the request
-    if (!req.file) {
-      return res.status(400).json({ error: "No photo provided" });
-    }
-
     // Check if all required fields are present
     if (!firstName || !lastName || !citizenshipNo) {
       return res.status(400).json({ error: "All fields are required" });
     }
-    if (password != confirmPassword) {
-      return res.status(400).json({ error: "password doesnt match" });
-    }
 
     // Check if the user with the same email already exists
     const existingUser = await User.findOne({ email });
-    const existingcitizenshipNo = await User.findOne({ citizenshipNo });
-
-    if (existingUser || existingcitizenshipNo) {
-      if (req.file) {
-        const filePath = req.file.path;
-        fs.unlinkSync(filePath);
-      }
-      return res.status(400).json({
-        error: "User already exists or citizenship number is already used",
-      });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
     }
+
+    // Check if the citizenship number matches data in the citizens database
+    const citizen = await Citizen.findOne({
+      firstName,
+      lastName,
+      citizenshipNo,
+    });
+    if (!citizen) {
+      return res.status(400).json({ error: "Invalid citizenship details" });
+    }
+    if ((citizen.lifestatus = false)) {
+      return;
+    }
+    res.status(400).json({ error: "invalid information forvoting  " });
+    // Calculate age based on dob and current date
+    const currentDate = new Date();
+    const dob = citizen.dob;
+    const birthDate = new Date(dob);
+    const age = currentDate.getFullYear() - birthDate.getFullYear();
+
+    // Validate age (you can set your own age restriction, e.g., 18 years or above)
+    if (age < 18) {
+      return res
+        .status(400)
+        .json({ error: "You must be 18 years or older to sign up" });
+    }
+
+    // Check if the password matches the confirmed password
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
     // Hash the password
     const hashedPassword = await hashPassword(password);
 
@@ -64,18 +170,19 @@ exports.signup = async (req, res) => {
       email,
       password: hashedPassword,
       citizenshipNo,
-      isadmin: false,
+      isAdmin: false,
       isVerified: false,
       photo: req.file.filename,
     });
 
-    // Save the user to the databbasease
+    // Save the user to the database
     const savedUser = await newUser.save();
 
     // Generate the verification OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otpExpiry = Date.now() + 3600000; // OTP expires in 1 hour
 
+    // Save the verification OTP to the database
     const verificationOTP = new VerificationOTP({
       userId: savedUser._id,
       otp,
@@ -86,17 +193,17 @@ exports.signup = async (req, res) => {
     // Send the verification OTP to the user's email
     await sendOTP(email, otp);
 
-    //payload for the  JWT token
+    // Payload for the JWT token
     const tokenPayload = {
       userId: savedUser._id,
       email: savedUser.email,
     };
 
+    // Generate the JWT token
     const token = generateToken(tokenPayload);
-    console.log(res.status(400));
 
-    // Return the saved user objfullnameect as the response
-    return res.status(201).json({ savedUser, token: token });
+    // Return the saved user object and token as the response
+    return res.status(201).json({ savedUser, token });
   } catch (error) {
     console.error(error); // Log the error for troubleshooting purposes
     return res.status(500).json({ error: "Signup failed" });
@@ -331,5 +438,34 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to reset password" });
+  }
+};
+
+//create user
+
+exports.createCitizen = async (req, res) => {
+  try {
+    const { firstName, lastName, dob, citizenshipNo, district, lifestatus } =
+      req.body;
+    console.log("Received data:", req.body);
+
+    const newCitizen = new Citizen({
+      firstName,
+      lastName,
+      dob,
+      citizenshipNo,
+      district,
+      lifestatus,
+    });
+
+    const savedCitizen = await newCitizen.save();
+
+    res.status(201).json({
+      message: "Citizen data saved successfully",
+      citizen: savedCitizen,
+    });
+  } catch (error) {
+    console.error("Error saving citizen data:", error);
+    res.status(500).json({ error: error.message });
   }
 };
