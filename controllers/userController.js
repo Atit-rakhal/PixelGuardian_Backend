@@ -19,7 +19,7 @@ const getUserDetailsbyid = async (req, res) => {
 };
 
 module.exports = {
-  getUserDetailsbyuid,
+  getUserDetailsbyid,
 };
 
 // Get all user details
@@ -32,7 +32,7 @@ const getAllUserDetails = async (req, res) => {
       return res.status(404).json({ error: "No users found" });
     }
 
-    res.status(200).json(users);
+    res.status(200).json({ users: users });
   } catch (error) {
     console.error("Get all user details error:", error);
     res.status(500).json({ error: "Failed to get user details" });
