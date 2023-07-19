@@ -140,7 +140,6 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ error: "Invalid citizenship details" });
     }
 
-    res.status(400).json({ error: "invalid information forvoting  " });
     // Calculate age based on dob and current date
     const currentDate = new Date();
     const dob = citizen.dob;
