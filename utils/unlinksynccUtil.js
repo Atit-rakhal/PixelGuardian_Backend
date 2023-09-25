@@ -1,7 +1,14 @@
-// const fs = require("fs");
-// exports.unlinksyncc = async (req.file) => {
-//   if (req.file) {
-//     const filePath = req.file.path;
-//     fs.unlinkSync(filePath);
-//   }
-// };
+const fs = require("fs");
+
+// Create a function to unlink (delete) a file synchronously
+const unlinkSyncc = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.error(`Error deleting file: ${filePath}`, error);
+  }
+};
+
+module.exports = { unlinkSyncc };

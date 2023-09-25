@@ -5,107 +5,17 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const { generateToken } = require("../utils/jwtUtil");
-
+const { unlinkSyncc } = require("../utils/unlinksynccUtil");
 app.use(bodyParser.urlencoded({ extended: true }));
 const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const { sendPasswordResetEmail } = require("../utils/nodemailerUtils");
 const VerificationOTP = require("../models/VerificationOTP");
+const faceapi = require("face-api.js");
+const Jimp = require("jimp");
 
 // Signup controller
-
-const { sendOTP } = require("../utils/otpUtil");
-
-// exports.signup = async (req, res) => {
-//   try {
-//     const {
-//       firstName,
-//       lastName,
-//       email,
-//       password,
-//       confirmPassword,
-//       citizenshipNo,
-//     } = req.body;
-
-//     console.log(req.body);
-//     // Check if photo file is present in the request
-//     if (!req.file) {
-//       return res.status(400).json({ error: "No photo provided" });
-//     }
-
-//     // Check if all required fields are present
-//     if (!firstName || !lastName || !citizenshipNo) {
-//       const filePath = req.file.path;
-//       fs.unlinkSync(filePath);
-//       return res.status(400).json({ error: "All fields are required" });
-//     }
-//     if (password != confirmPassword) {
-//       const filePath = req.file.path;
-//       fs.unlinkSync(filePath);
-//       return res.status(400).json({ error: "password doesnt match" });
-//     }
-
-//     // Check if the user with the same email already exists
-//     const existingUser = await User.findOne({ email });
-//     const existingcitizenshipNo = await User.findOne({ citizenshipNo });
-
-//     if (existingUser || existingcitizenshipNo) {
-//       const filePath = req.file.path;
-//       fs.unlinkSync(filePath);
-
-//       return res.status(400).json({
-//         error: "User already exists or citizenship number is already used",
-//       });
-//     }
-//     // Hash the password
-//     const hashedPassword = await hashPassword(password);
-
-//     // Create a new user object with the provided data
-//     const newUser = new User({
-//       firstName,
-//       lastName,
-//       email,
-//       password: hashedPassword,
-//       citizenshipNo,
-//       isadmin: false,
-//       isVerified: false,
-//       photo: req.file.filename,
-//     });
-
-//     // Save the user to the databbasease
-//     const savedUser = await newUser.save();
-
-//     // Generate the verification OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000);
-//     const otpExpiry = Date.now() + 3600000; // OTP expires in 1 hour
-
-//     const verificationOTP = new VerificationOTP({
-//       userId: savedUser._id,
-//       otp,
-//       otpExpiry,
-//     });
-//     await verificationOTP.save();
-
-//     // Send the verification OTP to the user's email
-//     await sendOTP(email, otp);
-
-//     //payload for the  JWT token
-//     const tokenPayload = {
-//       userId: savedUser._id,
-//       email: savedUser.email,
-//     };
-
-//     const token = generateToken(tokenPayload);
-//     console.log(res.status(400));
-
-//     // Return the saved user objfullnameect as the response
-//     return res.status(201).json({ savedUser, token: token });
-//   } catch (error) {
-//     console.error(error); // Log the error for troubleshooting purposes
-//     return res.status(500).json({ error: "Signup failed" });
-//   }
-// };
 
 exports.signup = async (req, res) => {
   try {
@@ -127,6 +37,9 @@ exports.signup = async (req, res) => {
     // Check if the user with the same email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      if (req.file) {
+        unlinkSyncc(req.file.path);
+      }
       return res.status(400).json({ error: "User already exists" });
     }
 
@@ -174,8 +87,46 @@ exports.signup = async (req, res) => {
       photo: req.file.filename,
     });
 
-    // Save the user to the database
-    const savedUser = await newUser.save();
+    const uploadedFileName = req.file.originalname;
+    console.log(uploadedFileName);
+    console.log("befor model loading");
+    const faceModelsPath = path.join(__dirname, "..", "facemodels");
+    console.log(faceModelsPath);
+    const ssdMobilenetv1 = new faceapi.SsdMobilenetv1();
+    ssdMobilenetv1.input = req.file.filename;
+    console.log("after face models loading ");
+    // faceapi.nets.faceLandmark68Net.loadFromDisk("/facemodels");
+    // faceapi.nets.faceRecognitionNet.loadFromDisk("/facemodels");
+    // Detect faces in the uploaded photo
+    const image = await Jimp.read(req.file.path);
+
+    // Resize the image if needed (optional)
+    image.resize(800, Jimp.AUTO);
+
+    // Convert the image to a buffer
+    const imageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+
+    // Now, you can use imageBuffer as the input to the model
+    const detections = await faceapi
+      .detectAllFaces(imageBuffer)
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+
+    console.log("after detections");
+    // Extract the facial features of the detected faces
+    const facialFeatures = await Promise.all(
+      detections.map(async (detection) => {
+        const landmarks = detection.landmarks;
+        const faceDescriptor = detection.descriptor;
+
+        // Return the facial features as an array
+        return [landmarks, faceDescriptor];
+      })
+    );
+
+    // Save the extracted facial features to the database
+    newUser.facialFeatures = facialFeatures;
+    await newUser.save();
 
     // Generate the verification OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
@@ -183,7 +134,7 @@ exports.signup = async (req, res) => {
 
     // Save the verification OTP to the database
     const verificationOTP = new VerificationOTP({
-      userId: savedUser._id,
+      userId: newUser._id,
       otp,
       otpExpiry,
     });
@@ -194,17 +145,21 @@ exports.signup = async (req, res) => {
 
     // Payload for the JWT token
     const tokenPayload = {
-      userId: savedUser._id,
-      email: savedUser.email,
+      userId: newUser._id,
+      email: newUser.email,
     };
 
     // Generate the JWT token
     const token = generateToken(tokenPayload);
 
     // Return the saved user object and token as the response
-    return res.status(201).json({ savedUser, token });
+    return res.status(201).json({ savedUser: newUser, token });
   } catch (error) {
     console.error(error); // Log the error for troubleshooting purposes
+    if (req.file) {
+      unlinkSyncc(req.file.path);
+    }
+
     return res.status(500).json({ error: "Signup failed" });
   }
 };

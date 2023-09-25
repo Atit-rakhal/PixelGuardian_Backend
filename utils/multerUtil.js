@@ -7,9 +7,15 @@ const configureMulter = (destinationFolder) => {
       cb(null, destinationFolder);
     },
     filename: (req, file, cb) => {
+      const { citizenshipNo } = req.body;
+      if (!citizenshipNo) {
+        return cb(new Error("Citizenship number is required"));
+      }
+
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       const extension = path.extname(file.originalname);
-      cb(null, file.fieldname + "-" + uniqueSuffix + extension);
+      const fileName = citizenshipNo + "-" + uniqueSuffix + extension;
+      cb(null, fileName);
     },
   });
 
@@ -22,5 +28,4 @@ const configureMulter = (destinationFolder) => {
 
   return upload;
 };
-
 module.exports = configureMulter;

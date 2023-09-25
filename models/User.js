@@ -85,10 +85,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
- 
   userAddress: {
     type: String,
     required: true,
+  },
+  facialFeatures: {
+    type: [String], // You can adjust the type to store face data as needed
   },
 });
 

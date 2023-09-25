@@ -1,5 +1,6 @@
 const User = require("../models/User");
-const router = express.router();
+const express = require("express");
+const router = express.Router();
 const fs = require("fs");
 
 // Get user details
