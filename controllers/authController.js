@@ -61,7 +61,7 @@ exports.signup = async (req, res) => {
       password: hashedPassword,
       isAdmin: false,
       isVerified: false,
-      photo: req.file.filename,
+      // photo: req.file.filename,
     });
     const savedUser = await newUser.save();
 
@@ -184,37 +184,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// exports.changePassword = async (req, res) => {
-//   try {
-//     const { currentPassword, newPassword } = req.body;
-//     const userId = req.user.id; // Assuming the user ID is available in req.user
 
-//     // Find the user by ID
-//     const user = await User.find({_id:userId});
-//     if (!user) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-//     console.log(user);
-
-//     // Compare the current password with the stored password
-//     const isMatch = await comparePassword(currentPassword, user.password);
-//     if (!isMatch) {
-//       return res.status(400).json({ error: 'Current password is incorrect' });
-//     }
-
-//     // Hash the new password
-//     const hashedPassword = await hashPassword(newPassword);
-
-//     // Update the user's password
-//     user.password = hashedPassword;
-//     await user.save();
-
-//     return res.status(200).json({ message: 'Password changed successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ error: 'Failed to change password' });
-//   }
-// };
 
 exports.changePassword = async (req, res) => {
   try {
