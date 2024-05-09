@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const Citizen = require("../models/citizens");
+
 const { hashPassword, comparePassword } = require("../utils/bcryptUtil");
 const express = require("express");
 const app = express();
@@ -12,8 +12,8 @@ const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const { sendPasswordResetEmail } = require("../utils/nodemailerUtils");
 const VerificationOTP = require("../models/VerificationOTP");
-const faceapi = require("face-api.js");
-const Jimp = require("jimp");
+const {sendOTP } = require("../utils/otpUtil");
+
 
 // Signup controller
 
@@ -25,12 +25,11 @@ exports.signup = async (req, res) => {
       email,
       password,
       confirmPassword,
-      citizenshipNo,
-      userAddress,
+      
     } = req.body;
 
     // Check if all required fields are present
-    if (!firstName || !lastName || !citizenshipNo) {
+    if (!firstName || !lastName) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -43,29 +42,9 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Check if the citizenship number matches data in the citizens database
-    const citizen = await Citizen.findOne({
-      firstName,
-      lastName,
-      citizenshipNo,
-    });
-    if (!citizen) {
-      return res.status(400).json({ error: "Invalid citizenship details" });
-    }
+   
 
-    // Calculate age based on dob and current date
-    const currentDate = new Date();
-    const dob = citizen.dob;
-    const birthDate = new Date(dob);
-    const age = currentDate.getFullYear() - birthDate.getFullYear();
-
-    // Validate age (you can set your own age restriction, e.g., 18 years or above)
-    if (age < 18) {
-      return res
-        .status(400)
-        .json({ error: "You must be 18 years or older to sign up" });
-    }
-
+    
     // Check if the password matches the confirmed password
     if (password !== confirmPassword) {
       return res.status(400).json({ error: "Passwords do not match" });
@@ -80,54 +59,13 @@ exports.signup = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      citizenshipNo,
-      userAddress,
       isAdmin: false,
       isVerified: false,
       photo: req.file.filename,
     });
+    const savedUser = await newUser.save();
 
-    const uploadedFileName = req.file.originalname;
-    console.log(uploadedFileName);
-    console.log("befor model loading");
-    const faceModelsPath = path.join(__dirname, "..", "facemodels");
-    console.log(faceModelsPath);
-    const ssdMobilenetv1 = new faceapi.SsdMobilenetv1();
-    ssdMobilenetv1.input = req.file.filename;
-    console.log("after face models loading ");
-    // faceapi.nets.faceLandmark68Net.loadFromDisk("/facemodels");
-    // faceapi.nets.faceRecognitionNet.loadFromDisk("/facemodels");
-    // Detect faces in the uploaded photo
-    const image = await Jimp.read(req.file.path);
-
-    // Resize the image if needed (optional)
-    image.resize(800, Jimp.AUTO);
-
-    // Convert the image to a buffer
-    const imageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
-
-    // Now, you can use imageBuffer as the input to the model
-    const detections = await faceapi
-      .detectAllFaces(imageBuffer)
-      .withFaceLandmarks()
-      .withFaceDescriptors();
-
-    console.log("after detections");
-    // Extract the facial features of the detected faces
-    const facialFeatures = await Promise.all(
-      detections.map(async (detection) => {
-        const landmarks = detection.landmarks;
-        const faceDescriptor = detection.descriptor;
-
-        // Return the facial features as an array
-        return [landmarks, faceDescriptor];
-      })
-    );
-
-    // Save the extracted facial features to the database
-    newUser.facialFeatures = facialFeatures;
-    await newUser.save();
-
+  
     // Generate the verification OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otpExpiry = Date.now() + 3600000; // OTP expires in 1 hour
@@ -397,29 +335,29 @@ exports.resetPassword = async (req, res) => {
 
 //create user
 
-exports.createCitizen = async (req, res) => {
-  try {
-    const { firstName, lastName, dob, citizenshipNo, district, lifestatus } =
-      req.body;
-    console.log("Received data:", req.body);
+// exports.createCitizen = async (req, res) => {
+//   try {
+//     const { firstName, lastName, dob, citizenshipNo, district, lifestatus } =
+//       req.body;
+//     console.log("Received data:", req.body);
 
-    const newCitizen = new Citizen({
-      firstName,
-      lastName,
-      dob,
-      citizenshipNo,
-      district,
-      lifestatus,
-    });
+//     const newCitizen = new Citizen({
+//       firstName,
+//       lastName,
+//       dob,
+//       citizenshipNo,
+//       district,
+//       lifestatus,
+//     });
 
-    const savedCitizen = await newCitizen.save();
+//     const savedCitizen = await newCitizen.save();
 
-    res.status(201).json({
-      message: "Citizen data saved successfully",
-      citizen: savedCitizen,
-    });
-  } catch (error) {
-    console.error("Error saving citizen data:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
+//     res.status(201).json({
+//       message: "Citizen data saved successfully",
+//       citizen: savedCitizen,
+//     });
+//   } catch (error) {
+//     console.error("Error saving citizen data:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };

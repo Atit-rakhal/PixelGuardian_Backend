@@ -15,13 +15,13 @@ router.post("/signup", upload.single("photo"), validate, authController.signup);
 
 // User details route (protected)
 
-router.post("/changePassword", authenticate, authController.changePassword);
+ router.post("/changePassword", authenticate, authController.changePassword);
 router.post("/forgotpassword", authController.forgotPassword);
 router.post("/verifyotp", authController.verifyOTP);
 
 router.post("/login", validate, authController.login);
 router.post("/resetpassword", authController.resetPassword);
-router.post("/citizens", authController.createCitizen);
+// router.post("/citizens", authController.createCitizen);
 router.get("/users", getAllUserDetails);
 
 module.exports = router;

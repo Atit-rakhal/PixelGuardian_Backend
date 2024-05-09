@@ -71,10 +71,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 
-  citizenshipNo: {
-    type: String,
-    required: true,
-  },
+  
 
   photo: {
     type: String,
@@ -85,13 +82,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  userAddress: {
-    type: String,
-    required: true,
-  },
-  facialFeatures: {
-    type: [String], // You can adjust the type to store face data as needed
-  },
+  
 });
 
 // Define a pre-delete hook to remove related verification data
